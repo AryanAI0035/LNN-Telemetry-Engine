@@ -1,0 +1,63 @@
+# ============================================================
+# LNN Telemetry Engine — Hyperparameter Configuration
+# ============================================================
+# All training, model, and data params live here so nothing
+# is hard-coded in the scripts. Modify this file to experiment
+# with different setups without touching any Python code.
+# ============================================================
+
+# --- Data Pipeline ---
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  sequence_length: 50          # Number of timesteps per input window
+  stride: 5                    # Sliding window stride (lower = more overlap)
+  train_split: 0.70
+  val_split: 0.15
+  test_split: 0.15
+  num_sensors: 8               # Battery, solar, CPU temp, panel temp, gyro x/y/z, mag
+
+# --- Telemetry Simulation ---
+simulation:
+  num_samples: 10000           # Total timesteps to generate
+  anomaly_ratio: 0.08          # ~8% of data contains anomalies
+  seed: 42
+  noise_stddev: 0.02           # Base Gaussian noise level
+
+# --- Model Architecture ---
+model:
+  input_size: 8                # Must match data.num_sensors
+  units: 48                    # Total neurons in the NCP wiring
+  output_size: 1               # Binary anomaly score
+  use_sparse_wiring: false     # true = AutoNCP, false = fully connected CfC
+  backbone: "cfc"              # "cfc" (fast, closed-form) or "ltc" (ODE-based)
+
+# --- Training ---
+training:
+  epochs: 100
+  batch_size: 64
+  learning_rate: 0.001
+  weight_decay: 0.0001         # L2 regularization (AdamW)
+  optimizer: "adamw"
+  scheduler: "cosine"          # Cosine annealing LR schedule
+  warmup_epochs: 5
+  gradient_clip: 1.0           # Max gradient norm (prevents exploding gradients)
+  early_stopping_patience: 40  # Stop if val F1 doesn't improve for N epochs
+
+# --- Evaluation ---
+evaluation:
+  anomaly_threshold: 0.5       # Default decision boundary for sigmoid output
+  optimize_threshold: true     # If true, sweep thresholds on val set to find best F1
+  checkpoint_path: "checkpoints/best_model.pt"
+
+# --- Visualization ---
+visualization:
+  output_dir: "outputs/figures"
+  dpi: 150
+  dark_theme: true
+  accent_colors:
+    - "#00D4AA"    # Teal — normal data
+    - "#FF6B6B"    # Coral — anomalies
+    - "#845EC2"    # Purple — predictions
+    - "#FFC75F"    # Amber — highlights
+    - "#4B8BBE"    # Steel blue — secondary
